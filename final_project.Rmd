@@ -1,0 +1,43 @@
+---
+title: "ID Modeling Final Project"
+author: "Ashley Tseng (at3346), Alicia Yang (ay2452), Cassandra Coulter (cc4347), and Christopher Armbruster (cwa2118)"
+date: "Due: May 6, 2020"
+output: html_document
+---
+
+## For our EPID P8477: Epi Modeling for Infectious Diseases final project, we will be re-creating a SEIR/SIRS model for the 2010 cholera otbreak in Haiti with a vaccination intervention, then applying the model to another historical outbreak.
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+```
+
+
+## SEIR Model
+```{r seir}
+
+```
+
+
+## SIRS Model
+```{r sirs}
+
+```
+
+
