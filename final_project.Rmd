@@ -31,13 +31,85 @@ theme_set(theme_minimal() + theme(legend.position = "bottom"))
 
 ## SEIR Model
 ```{r seir}
+# Based on SEIR model from P8477 lab #3
+SEIR = function(t,state,parameters){
+  with(as.list(c(state,parameters)),{
+    
+    dS = -beta*S*I/N;
+    dE = beta*S*I/N-alpha*E;
+    dI = alpha*E-gamma*I;
+    
+    dcumInci = beta*S*I/N;
+    
+    list(c(dS, dE, dI, dcumInci))
+  })
+}
 
+# Specify initial conditions/parameters
+times_SEIR = 0:100
+N = 1e5; 
+E0 = 10; 
+I0 = 0; 
+S0 = N-E0-I0;
+state_SEIR = c(S = S0, E = E0, I = I0, cumInci = 0);
+parameters_SEIR = c(beta = 0.6, alpha = 1/1.5, gamma = 1/3); 
+sim_SEIR = ode(y = state_SEIR, times = times_SEIR, func = SEIR, parms = parameters_SEIR)
 ```
+
 
 
 ## SIRS Model
+### Is a SIRS model the same as a SIR model? Do we need to incorporate a second "S" equation in our model for SIRS?
 ```{r sirs}
+# Based on SIR model from P8477 lab #2
+SIR = function(t,state,parameters){
+  with(as.list(c(state,parameters)),{
+    
+    dS = -beta*S*I/N;
+    dI = beta*S*I/N-gamma*I;
+    dR = gamma*I;
+    
+    list(c(dS,dI,dR))
+  })
+}
 
+# Specify initial conditions/parameters
+times_SIR = seq(0, 365, by = 1);  # run for a year
+N = 1e5; # population size
+I0 = 10; # initial No. of Infectious people
+S0 = N - I0;  # initial No. of Susceptible people
+R0 = 0; # initial No. of Recovered people
+state_SIR = c(S = S0, I = I0, R = R0)
+parameters_SIR = c(beta = 0.5, gamma = 0.3)
+sim_SIR = ode(y = state_SIR, times = times_SIR, func = SIR, parms = parameters_SIR)
 ```
 
+
+
+## SIAR model w/ W & V
+
+### The following notations for the compartments were used by Kirpich et al. (2017) (see: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5406029/):
+### S(t)—the size of the susceptible compartment at a given time t.
+### A(t)—the size of the asymptomatic compartment at a given time t.
+### I(t)—the size of the symptomatic compartment at a given time t.
+### R(t)—the size of the recovered compartment at a given time t.
+### V(t)—the size of the vaccinated compartment at a given time t.
+### W(t)—bacteria concentration in water at a given time t (environmental compartment).
+```{r siar}
+# How do we simplify the intervention model equations from Kirpich et al. (2017) so that we can code them in R Studio?
+
+SIAR = function(t,state,parameters){
+  with(as.list(c(state,parameters)),{
+    
+    dS = ;
+    dA = ;
+    dI = ;
+    dR = ;
+    dV = ;
+    dW = ;
+    
+    list(c(dS,dA,dI,dR,dV,dW))
+  })
+}
+```
 
