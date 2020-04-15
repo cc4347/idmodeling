@@ -60,6 +60,7 @@ sim_SEIR = ode(y = state_SEIR, times = times_SEIR, func = SEIR, parms = paramete
 
 ## SIRS Model
 ### Is a SIRS model the same as a SIR model? Do we need to incorporate a second "S" equation in our model for SIRS?
+### SIRS is a little different from SIR--I think it takes into account waning immunity. For our overall model, we may want to include another "S" but depending on the scenario we choose and the length of the outbreak, I'm not sure if we'll need to take waning immunity into account for our scenario.
 ```{r sirs}
 # Based on SIR model from P8477 lab #2
 SIR = function(t,state,parameters){
@@ -97,16 +98,17 @@ sim_SIR = ode(y = state_SIR, times = times_SIR, func = SIR, parms = parameters_S
 ### W(t)—bacteria concentration in water at a given time t (environmental compartment).
 ```{r siar}
 # How do we simplify the intervention model equations from Kirpich et al. (2017) so that we can code them in R Studio?
+#Current equations here are directly taken from Kirpich et al.
 
 SIAR = function(t,state,parameters){
   with(as.list(c(state,parameters)),{
     
-    dS = ;
-    dA = ;
-    dI = ;
-    dR = ;
-    dV = ;
-    dW = ;
+    dS = muh + N + murs*R + muvs*V - (muwsa + muwsi)*S*(W/(kappa+W)) - muhsa + muhsi*S*A + I -(musv +muh_)*S;
+    dA = (muwsa*S + muwva*V)*(W/(kappa+W)) + (muhsa*S + muhva*V)*(A+I-(muar + muh_));
+    dI = (muwsi*S + muwvi*V)*(W/(kappa+W)) + (muhsi*S +muhvi*V)*(A+I-(muir + muh_))*I;
+    dR = muar*A + muir*I - (murs + muh_)*R;
+    dV = musv*S - (muwva + muwvi)*V*(W/(kappa+W)) - (muhva + muhvi)*V*A+I-(muvs+muh_)*V;
+    dW = g*(muaw*A + muiw*I + h*M*W-gammaw_*W);
     
     list(c(dS,dA,dI,dR,dV,dW))
   })
