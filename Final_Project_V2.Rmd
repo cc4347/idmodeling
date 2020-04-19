@@ -1,0 +1,46 @@
+---
+title: 'ID Modeling Final Project: Cholera'
+author: "Alicia Yang (ay2452), Ashley Tseng (at3346), Cassandra Coulter (cc4347), and Christopher Armbruster (cwa2118)"
+date: "Due: May 6, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+##setting up file
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(deSolve)
+```
+
+```{r}
+###Building SIWR model from Tuite et al. 2011
+
+SIWR = function(t,state,parameters){
+  with(as.list(c(state,parameters)),{
+    
+    dS = my-  (gamma*S) - (mu*S);
+    dI = (-gamma*I) + (lamba*S) - (mu*I);
+    dR = (gamma*R) - (mu*R);
+    dW = xi(I-W) 
+    
+    list(c(dS,dI,dR, dW))
+  })
+}
+
+
+
+##NOTE: initial conditions/parameters not completely edited yet
+
+# Specify initial conditions/parameters
+times_SIWR = seq(0, 365, by = 1);  # run for a year
+N = 1e5; # population size
+I0 = 10; # initial No. of Infectious people
+S0 = N - I0;  # initial No. of Susceptible people
+R0 = 0; # initial No. of Recovered people
+state_SIWR = c(S = S0, I = I0, R = R0)
+parameters_SIWR = c(beta = 0.5, gamma = 0.3)
+sim_SIWR = ode(y = state_SIWR, times = times_SIWR, func = SIWR, parms = parameters_SIWR)
+
+```
+
