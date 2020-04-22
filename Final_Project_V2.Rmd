@@ -20,9 +20,9 @@ SIWR = function(t,state,parameters){
   with(as.list(c(state,parameters)),{
     
     dS = (-lambda*S) - (S);
-    dI = (-gamma*I) + (lamba*S) - (I);
+    dI = (-gamma*I) + (lambda*S) - (I);
     dR = (gamma*R) - (R);
-    dW = (xi(I-W))/N 
+    dW = (xi*(I-W))/N 
     
     list(c(dS,dI,dR, dW))
   })
@@ -42,11 +42,11 @@ S0 = N - I0;  # initial No. of Susceptible people
 R0 = 0; # initial No. of Recovered people
 Beta_x = 0.010; #transmission rate from case
 Beta_w = 0.944; #transmissibility of water
-lambda = (Beta_x*I + Beta_w*W)/N; #force of infection
 gamma = 1/2.913; #gamma
 xi = 1/5.910; #mean survivial of pathogen in water (weeks)
 state_SIWR = c( S = S0, I = I0, W = W0, R = R0)
 parameters_SIWR = c(gamma, xi, lambda)
+lambda = (Beta_x*I + Beta_w*W)/N; #force of infection
 sim_SIWR = ode(y = state_SIWR, times = times_SIWR, func = SIWR, parms = parameters_SIWR)
 
 ##force of infection
