@@ -5,56 +5,104 @@ date: "Due: May 6, 2020"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-##setting up file
+```{r setup, include = FALSE}
+## Setting up file
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(deSolve)
 ```
 
-```{r}
-###Building SIWR model from Tuite et al. 2011
-
+```{r siwr_model}
+## Building SIWR model from Tuite et al. 2011
 SIWR = function(t,state,parameters){
   with(as.list(c(state,parameters)),{
     
-    dS = (-lambda*S) - (S);
-    dI = (-gamma*I) + (lambda*S) - (I);
-    dR = (gamma*R) - (R);
-    dW = (xi*(I-W))/N 
+    dS = (-lambda*S) - (S); # susceptible compartment
+    dI = (-gamma*I) + (lambda*S) - (I); # infectious compartment
+    dR = (gamma*R) - (R); # recovered compartment
+    dW = (xi*(I-W))/N # environmental (bacterial) compartment normalized by total population size
     
-    list(c(dS,dI,dR, dW))
+    list(c(dS,dI,dR,dW))
   })
 }
 
 
+## NOTE (4/22): initial conditions/parameters not completely edited yet
 
-##NOTE: initial conditions/parameters not completely edited yet
-
-# Specify initial conditions/parameters
-times_SIWR = seq(0, 730, by = 1);  # run for a year
-N = 9798046; # population size
-W0 = 0.0003; #initial concentration of bacteria
-W = 2.3; #concentration of bacteria
-I0 = 0; #initial no. of infectious individuals
-S0 = N - I0;  # initial No. of Susceptible people
-R0 = 0; # initial No. of Recovered people
-Beta_x = 0.010; #transmission rate from case
-Beta_w = 0.944; #transmissibility of water
-gamma = 1/2.913; #gamma
-xi = 1/5.910; #mean survivial of pathogen in water (weeks)
-state_SIWR = c( S = S0, I = I0, W = W0, R = R0)
-parameters_SIWR = c(gamma, xi, lambda)
-lambda = (Beta_x*I + Beta_w*W)/N; #force of infection
+## Specify initial conditions/parameters
+times_SIWR = seq(0, 730, by = 1);  # run for two years
+N = 9798046; # total population size in 2009
+W0 = 0.0003; # initial concentration of bacteria (estimated from Hood et al. 1981)
+# W = 2.3; # concentration of bacteria (estimated from Hood et al. 1981). 4/23 note from AT: I think we need to choose either W0 or W. It doesn't make sense logically that we set "W = W0" in "state_SIWR" when we have defined them to be two different values here. I think we should keep W0 and remove W here.
+I0 = 10; # initial no. of infectious individuals - set an arbitrary number of 10 for now
+S0 = N - I0; # initial no. of Susceptible people
+R0 = 0; # initial no. of Recovered people
+Beta_i = 0.010; # transmission rate from case (Tuite et al. 2011, Appendix Table 2)
+Beta_w = 0.944; # transmissibility of water (Tuite et al. 2011, Appendix Table 2)
+gamma = 1/2.913; # mean duration of infectiousness (days) (Tuite et al. 2011, Appendix Table 2)
+xi = 1/5.910; # mean survival of pathogen in water (weeks) (Tuite et al. 2011, Appendix Table 2)
+I = I0; # I needs to be defined in order for the lambda equation to run
+W = W0; # W needs to be defined in order for the lambda equation to run
+lambda = (Beta_i*I + Beta_w*W)/N # force of infection
+state_SIWR = c(S = S0, I = I0, W = W0, R = R0)
+parameters_SIWR = c(gamma = gamma, xi = xi, lambda = lambda)
 sim_SIWR = ode(y = state_SIWR, times = times_SIWR, func = SIWR, parms = parameters_SIWR)
 
-##force of infection
-lambda = (Beta_x*I + Beta_w*W)/N
+View(sim_SIWR) # The model runs! Is it right? Unsure...
 
 
-##R0
+## Force of infection
+lambda = ((Beta_i*I + Beta_w*W)/N) # Do we need this down here too? Already defined in initial parameters above. 
+
+
+## R0
 R_0 = 2.78
 R0_eq = Beta_w/gamma
+```
+
+
+Apply the Haiti SIWR model to Nigeria cholera outbreak: 
+```{r nigeria_outbreak}
+## Read in Table 3 of Elimian et al. 2019 containing population size, no. of cholera cases, no. of cholera deaths, attack rate/100,000 population, and the case fatality rate (%) by state. The total country-wide estimates are in the last row of the dataset.
+nigeria_data = 
+  read_csv("./data/Nigeria_Cholera_Outbreak.csv", col_names = TRUE) %>%
+  janitor::clean_names()
+
+## Apply Haiti SIWR model to Nigeria cholera outbreak:
+SIWR = function(t,state,parameters){
+  with(as.list(c(state,parameters)),{
+    
+    dS = (-lambda*S) - (S); # susceptible compartment
+    dI = (-gamma*I) + (lambda*S) - (I); # infectious compartment
+    dR = (gamma*R) - (R); # recovered compartment
+    dW = (xi*(I-W))/N # environmental (bacterial) compartment normalized by total population size
+    
+    list(c(dS,dI,dR,dW))
+  })
+}
+
+
+## NOTE (4/23) from AT: What are the parameters that we need to change when applying our model to the Nigeria cholera outbreak? So far I have changed N.
+
+## Specify initial conditions/parameters
+# times_SIWR = seq(0, 730, by = 1);  # run for two years
+N = 34524322; # projected 2019 total population size of Nigeria
+W0 = 0.0003; # initial concentration of bacteria (estimated from Hood et al. 1981)
+I0 = 10; # initial no. of infectious individuals - set an arbitrary number of 10 for now
+S0 = N - I0; # initial no. of Susceptible people
+R0 = 0; # initial no. of Recovered people
+Beta_i = 0.010; # transmission rate from case (Tuite et al. 2011, Appendix Table 2)
+Beta_w = 0.944; # transmissibility of water (Tuite et al. 2011, Appendix Table 2)
+gamma = 1/2.913; # mean duration of infectiousness (days) (Tuite et al. 2011, Appendix Table 2)
+xi = 1/5.910; # mean survival of pathogen in water (weeks) (Tuite et al. 2011, Appendix Table 2)
+I = I0; # I needs to be defined in order for the lambda equation to run
+W = W0; # W needs to be defined in order for the lambda equation to run
+lambda = (Beta_i*I + Beta_w*W)/N # force of infection
+state_SIWR_Nigeria = c(S = S0, I = I0, W = W0, R = R0)
+parameters_SIWR_Nigeria = c(gamma = gamma, xi = xi, lambda = lambda)
+sim_SIWR_Nigeria = ode(y = state_SIWR, times = times_SIWR, func = SIWR, parms = parameters_SIWR)
+
+View(sim_SIWR_Nigeria)
 ```
 
