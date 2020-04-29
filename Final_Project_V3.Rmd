@@ -25,14 +25,14 @@ SIWR = function(t,state,parameters){
     dI = (-gamma*I) + (lambda*S); # infectious compartment
     dR = (gamma*I); # recovered compartment
     dW = (xi*(I-W)); # environmental (bacterial) compartment normalized by total population size
-    dcumI = (lambda*S*(1-Pw/100));
+    dcumI = (lambda*S)*(1-Pw/100);
     
     list(c(dS,dI,dR,dW,dcumI))
   })
 }
 
 ## Specify initial conditions/parameters
-times_SIWR = seq(0, 98, by = 1);  # run for 98 days
+times_SIWR = seq(0, 100, by = 1);  # run for 100 days
 N = 9798046; # total population size in 2009
 W0 = 1; #0.0003; # initial concentration of bacteria (estimated from Hood et al. 1981)
 I0 = 10; # initial no. of infectious individuals - set an arbitrary number of 10 for now
@@ -43,7 +43,7 @@ Beta_w = 0.944; # transmissibility of water (Tuite et al. 2011, Appendix Table 2
 gamma = 1/2.913; # mean duration of infectiousness (days) (Tuite et al. 2011, Appendix Table 2)
 xi = 1/5.910; # mean survival of pathogen in water (weeks) (Tuite et al. 2011, Appendix Table 2)
 Pw = 50; # probability of provision of clean water
-state_SIWR = c(S = S0, I = I0, W = W0, R = R0, cumI = I0)
+state_SIWR = c(S = S0, I = I0, R = R0, W = W0, cumI = I0)
 parameters_SIWR = c(gamma = gamma, xi = xi, Beta_i = Beta_i, Beta_w = Beta_w, Pw = Pw)
 sim_SIWR = ode(y = state_SIWR, times = times_SIWR, func = SIWR, parms = parameters_SIWR)
 
@@ -53,7 +53,6 @@ sim_haiti = as.data.frame(sim_SIWR)
 sim_haiti %>% 
   ggplot(aes(x = time, y = cumI)) +
   geom_point() +
-  xlim(15, 98) +
   labs(x = "Time", y = "Cumulative Incidence") +
   ggtitle("Haiti Cholera Outbreak, October-November 2010")
 ```
@@ -74,11 +73,11 @@ SIWR = function(t,state,parameters){
     
     lambda = (Beta_i*I + Beta_w*W)/N # force of infection
     
-    dS = (-lambda*S); # susceptible compartment
+    dS = (-lambda*S*(1-Pw/100)); # susceptible compartment
     dI = (-gamma*I) + (lambda*S); # infectious compartment
     dR = (gamma*I); # recovered compartment
     dW = (xi*(I-W)); # environmental (bacterial) compartment normalized by total population size
-    dcumI = (lambda*S);
+    dcumI = (lambda*S*(1-Pw/100));
     
     list(c(dS,dI,dR,dW,dcumI))
   })
@@ -95,7 +94,7 @@ Beta_i = 0.010; # transmission rate from case (Tuite et al. 2011, Appendix Table
 Beta_w = 0.100; # 0.944; # transmissibility of water (Tuite et al. 2011, Appendix Table 2)
 gamma = 1/2.913; # mean duration of infectiousness (days) (Tuite et al. 2011, Appendix Table 2)
 xi = 1/5.910; # mean survival of pathogen in water (weeks) (Tuite et al. 2011, Appendix Table 2)
-state_SIWR_Nigeria = c(S = S0, I = I0, W = W0, R = R0, cumI = I0)
+state_SIWR_Nigeria = c(S = S0, I = I0, R = R0, W = W0, cumI = I0)
 parameters_SIWR_Nigeria = c(gamma = gamma, xi = xi, Beta_i = Beta_i, Beta_w = Beta_w)
 sim_SIWR_Nigeria = ode(y = state_SIWR_Nigeria, times = times_SIWR_Nigeria, func = SIWR, parms = parameters_SIWR_Nigeria)
 
