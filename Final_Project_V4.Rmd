@@ -1,0 +1,151 @@
+---
+title: 'ID Modeling Final Project: Cholera'
+author: "Alicia Yang (ay2452), Ashley Tseng (at3346), Cassandra Coulter (cc4347), and Christopher Armbruster (cwa2118)"
+date: "Due: May 6, 2020"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+## Setting up file
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(deSolve)
+```
+
+
+```{r siwr_model}
+## Building SIWR model from Tuite et al. 2011
+SIWR = function(t,state,parameters){
+  with(as.list(c(state,parameters)),{
+    
+    lambda = 0.982*((Beta_i*I + Beta_w*W)/N) # force of infection
+    
+    dS = (-lambda*S*(1-Pw/100)); # susceptible compartment with probability of provision of clean water incorporated
+    dI = (-gamma*I) + (lambda*S); # infectious compartment
+    dR = (gamma*I); # recovered compartment
+    dW = (xi*(I-W)); # environmental (bacterial) compartment normalized by total population size
+    dcumI = (lambda*S)*(1-Pw/100);
+    
+    list(c(dS,dI,dR,dW,dcumI))
+  })
+}
+
+## Specify initial conditions/parameters
+times_SIWR = seq(0, 100*7, by = 1);  # run for 100 days
+N = 9798046; # total population size in 2009
+W0 = 1; #0.0003; # initial concentration of bacteria (estimated from Hood et al. 1981)
+I0 = 10; # initial no. of infectious individuals - set an arbitrary number of 10 for now
+S0 = N - I0; # initial no. of Susceptible people
+R0 = 0; # initial no. of Recovered people
+Beta_i = 0.010; # transmission rate from case (Tuite et al. 2011, Appendix Table 2)
+Beta_w = 0.944; # transmissibility of water (Tuite et al. 2011, Appendix Table 2)
+gamma = 1/2.913; # mean duration of infectiousness (days) (Tuite et al. 2011, Appendix Table 2)
+xi = 1/5.910; # mean survival of pathogen in water (weeks) (Tuite et al. 2011, Appendix Table 2)
+#Pw = 0.5; # probability of provision of clean water
+
+state_SIWR = c(S = S0, I = I0, R = R0, W = W0, cumI = I0);
+ParamsNoInt = c(
+    gamma = gamma,
+    xi = xi,
+    Beta_i = Beta_i,
+    Beta_w = Beta_w
+  );
+
+Pw = seq(.1,.5,by = .1)
+res = matrix(0,700,length(Pw))
+for (i in 1:length(Pw)) {
+  z = Pw[i];
+  ParamsInt = c(
+    gamma = gamma,
+    xi = xi,
+    Beta_i = (1-Pw)*Beta_i,
+    Beta_w = (1-Pw)*Beta_w
+  );
+  simNoInt=ode(y=state_SIWR,times=times_SIWR,func=SIWR,parms=ParamsNoInt);
+  state2=c(S=tail(simNoInt[,'S'],1),I=tail(simNoInt[,'I'],1),
+           R=tail(simNoInt[,'R'],1),
+           cumI=tail(simNoInt[,'cumInci'],1));
+  simInt=ode(y=state2,times=times_SIWR,func=SIWR,parms=ParamsInt);
+  sim=rbind(simInt[-1,],simNoInt[-1,])
+  # save the result before exiting the loop
+  res[,i]=sim[seq(7,nrow(sim),by=7),'cumI']-c(0,sim[seq(7,nrow(sim)-7,by=7),'cumI']) # get weekly incidence
+}
+
+
+parameters_SIWR = c(gamma = gamma, xi = xi, Beta_i = Beta_i, Beta_w = Beta_w, Pw = Pw)
+sim_SIWR = ode(y = state_SIWR, times = times_SIWR, func = SIWR, parms = parameters_SIWR)
+
+View(sim_SIWR)
+
+sim_haiti = as.data.frame(simInt)
+sim_haiti %>% 
+  ggplot(aes(x = time, y = cumI)) +
+  geom_point() +
+  labs(x = "Time", y = "Cumulative Incidence") +
+  ggtitle("Haiti Cholera Outbreak, October-November 2010")
+
+ymax=max(res)*1.2
+par(mar=c(3,3,1,1),mgp=c(2,.5,0),cex=1.1)
+df.bar=barplot(simInt[,cumI],col='white',xlab='Date of onset (week)',
+               ylab='Weekly incidence', main = "", 
+               ylim=c(0,ymax))
+axis(1,at=df.bar,lab=1:20)
+matlines(x=df.bar, y=res,lty=1, lwd=2,col=rainbow(ncol(res))) # use 'x=df.bar' to match with weeks
+legend(0,ymax/1.2,c(paste('',Pw,sep='')),
+       lty=1, lwd=2,col=rainbow(ncol(res)),bty='n',cex=.8)
+```
+
+
+Apply the Haiti SIWR model to Nigeria cholera outbreak: 
+```{r nigeria_outbreak}
+## Read in Table 3 of Elimian et al. 2019 containing population size, no. of cholera cases, no. of cholera deaths, attack rate/100,000 population, and the case fatality rate (%) by state. The total country-wide estimates are in the last row of the dataset.
+nigeria_data = 
+  read_csv("./data/Nigeria_Cholera_Outbreak.csv", col_names = TRUE) %>%
+  janitor::clean_names()
+
+
+##### Northeast Nigeria region only: Adamawa, Bauchi, Borno, Gombe, Yobe #####
+## Apply Haiti SIWR model to Nigeria cholera outbreak:
+SIWR = function(t,state,parameters){
+  with(as.list(c(state,parameters)),{
+    
+    lambda = (Beta_i*I + Beta_w*W)/N # force of infection
+    
+    dS = (-lambda*S*(1-Pw/100)); # susceptible compartment
+    dI = (-gamma*I) + (lambda*S); # infectious compartment
+    dR = (gamma*I); # recovered compartment
+    dW = (xi*(I-W)); # environmental (bacterial) compartment normalized by total population size
+    dcumI = (lambda*S*(1-Pw/100));
+    
+    list(c(dS,dI,dR,dW,dcumI))
+  })
+}
+
+## Specify initial conditions/parameters
+times_SIWR_Nigeria = seq(0, 11*30, by = 1);  # run for 11 months
+N = 24593161; # projected 2018 total population size of Nigeria's northeast states
+W0 = 0.0003; # initial concentration of bacteria (estimated from Hood et al. 1981)
+I0 = 1; # initial no. of infectious individuals - set an arbitrary number of 10 for now
+S0 = N - I0; # initial no. of Susceptible people
+R0 = 0; # initial no. of Recovered people
+Beta_i = 0.010; # transmission rate from case (Tuite et al. 2011, Appendix Table 2)
+Beta_w = 0.100; # 0.944; # transmissibility of water (Tuite et al. 2011, Appendix Table 2)
+gamma = 1/2.913; # mean duration of infectiousness (days) (Tuite et al. 2011, Appendix Table 2)
+xi = 1/5.910; # mean survival of pathogen in water (weeks) (Tuite et al. 2011, Appendix Table 2)
+state_SIWR_Nigeria = c(S = S0, I = I0, R = R0, W = W0, cumI = I0)
+parameters_SIWR_Nigeria = c(gamma = gamma, xi = xi, Beta_i = Beta_i, Beta_w = Beta_w)
+sim_SIWR_Nigeria = ode(y = state_SIWR_Nigeria, times = times_SIWR_Nigeria, func = SIWR, parms = parameters_SIWR_Nigeria)
+
+View(sim_SIWR_Nigeria)
+
+sim_nigeria = as.data.frame(sim_SIWR_Nigeria)
+sim_nigeria %>% 
+  ggplot(aes(x = time, y = cumI)) +
+  geom_point() +
+  xlim(0, 11*30) +
+  labs(x = "Time", y = "Cumulative Incidence") +
+  ggtitle("Nigeria Cholera Outbreak, January-November 2018")
+```
+
+
